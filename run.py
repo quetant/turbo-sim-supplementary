@@ -1,4 +1,5 @@
 import argparse
+import h5py
 import torch
 import models.base
 from models.turbo import TurboSim
@@ -33,6 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("--path-images", type=str, default='experiment/')
     parser.add_argument("--load", type=str2bool, default=False)
     parser.add_argument("--plot", type=str2bool, default=True)
+    parser.add_argument("--save-outputs", type=str2bool, default=True)
     parser.add_argument("--use-cuda", type=str2bool, default=True)
     parser.add_argument("--load-epoch", type=int, default=0)
     parser.add_argument("--load-which", type=str, default='final')
@@ -72,6 +74,7 @@ if __name__ == "__main__":
     TRAIN_NEW = not opt.load
     SAVE = True
     PLOT = opt.plot
+    SAVE_OUTPUTS = opt.save_outputs
     LOAD_EPOCH = opt.load_epoch
     LOAD_WHICH = opt.load_which
     RECO_LIM = opt.plot_reco_lim
@@ -267,6 +270,20 @@ if __name__ == "__main__":
         print('Load model...')
         model, critics = M.load_model(model, critics, which=LOAD_WHICH,
                                       path=PATH_MODELS+output_model)
+
+    if SAVE_OUTPUTS:
+        print('Save model outputs...')
+        xi, zi, xt, zt, xh, zh = M.get_model_outputs(
+            model, data_x_test, data_z_test,
+            mean_x, std_x, mean_z, std_z,
+        )
+        with h5py.File(PATH_MODELS + output_model + '_outputs.h5', 'w') as f:
+            f.create_dataset('xi', data=xi)
+            f.create_dataset('zi', data=zi)
+            f.create_dataset('xt', data=xt)
+            f.create_dataset('zt', data=zt)
+            f.create_dataset('xh', data=xh)
+            f.create_dataset('zh', data=zh)
 
     if TRAIN_NEW:
         print('Plot losses...')
